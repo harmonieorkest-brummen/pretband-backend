@@ -1,0 +1,27 @@
+{
+	"functions": {
+		"api/**/*.ts": {
+			"runtime": "nodejs20.x"
+		}
+	},
+	"headers": [
+		{
+			"source": "/api/(.*)",
+			"headers": [
+				{
+					"key": "Access-Control-Allow-Origin",
+					"value": "https://pretband.nl"
+				},
+				{
+					"key": "Access-Control-Allow-Methods",
+					"value": "GET,POST,PUT,OPTIONS"
+				},
+				{
+					"key": "Access-Control-Allow-Headers",
+					"value": "Content-Type,Authorization"
+				},
+				{ "key": "Access-Control-Max-Age", "value": "86400" }
+			]
+		}
+	]
+}
