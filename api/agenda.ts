@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handleCors } from "./_lib/cors";
-import { requireAuth } from "./_lib/jwt";
-import { getAgenda, setAgenda } from "./_lib/redis";
-import type { AgendaData } from "./_lib/types";
+import { handleCors } from "./_lib/cors.js";
+import { requireAuth } from "./_lib/jwt.js";
+import { getAgenda, setAgenda } from "./_lib/redis.js";
+import type { AgendaData } from "./_lib/types.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (handleCors(req, res)) return;

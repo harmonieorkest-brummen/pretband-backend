@@ -8,10 +8,8 @@ export type MembersData = {
 export type AgendaData = {
 	events: {
 		id: string;
-		variant: "yellow" | "red";
 		date: string;
 		title: string;
 		location: string;
-		status: string;
 	}[];
 };

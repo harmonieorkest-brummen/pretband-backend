@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import bcrypt from "bcryptjs";
-import { handleCors } from "./_lib/cors";
-import { signToken } from "./_lib/jwt";
+import { handleCors } from "./_lib/cors.js";
+import { signToken } from "./_lib/jwt.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (handleCors(req, res)) return;
