@@ -38,14 +38,23 @@ export const getAgenda = async (): Promise<AgendaData | null> => {
 	const events: AgendaData["events"] = [];
 	for (const key of keys) {
 		const id = key.split(":")[1];
-		const data = await client.hGetAll(key);
+		const [data, ttlSeconds] = await Promise.all([
+			client.hGetAll(key),
+			client.ttl(key),
+		]);
 
-		events.push({
+		const event: (typeof events)[number] = {
 			id,
 			date: data.date || "",
 			title: data.title || "",
 			location: data.location || "",
-		});
+		};
+
+		if (ttlSeconds > 0) {
+			event.daysUntilDeletion = Math.floor(ttlSeconds / (60 * 60 * 24));
+		}
+
+		events.push(event);
 	}
 
 	// Sort events by date
@@ -69,5 +78,14 @@ export const setAgenda = async (data: AgendaData) => {
 			title: event.title || "",
 			location: event.location || "",
 		});
+
+		if (event.date) {
+			const dateObj = new Date(event.date);
+			if (!Number.isNaN(dateObj.getTime())) {
+				dateObj.setMonth(dateObj.getMonth() + 1);
+				// Expire 1 month after the event date
+				await client.expireAt(key, Math.floor(dateObj.getTime() / 1000));
+			}
+		}
 	}
 };

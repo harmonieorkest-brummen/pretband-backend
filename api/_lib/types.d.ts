@@ -11,5 +11,6 @@ export type AgendaData = {
 		date: string;
 		title: string;
 		location: string;
+		daysUntilDeletion?: number;
 	}[];
 };
