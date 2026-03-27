@@ -39,7 +39,7 @@ export const getAgenda = async (): Promise<AgendaData | null> => {
 	for (const key of keys) {
 		const id = key.split(":")[1];
 		const data = await client.hGetAll(key);
-		
+
 		events.push({
 			id,
 			date: data.date || "",
@@ -49,8 +49,10 @@ export const getAgenda = async (): Promise<AgendaData | null> => {
 	}
 
 	// Sort events by date
-	events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-	
+	events.sort(
+		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+	);
+
 	return { events };
 };
 
