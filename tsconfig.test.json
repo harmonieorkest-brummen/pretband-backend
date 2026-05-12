@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": ".test-dist",
+    "rootDir": ".",
+    "noEmitOnError": true
+  },
+  "include": [
+    "api/**/*",
+    "test/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".test-dist",
+    ".vercel"
+  ]
+}

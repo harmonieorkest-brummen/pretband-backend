@@ -4,31 +4,49 @@ import { requireAuth } from "./_lib/jwt.js";
 import { getAgenda, setAgenda } from "./_lib/redis.js";
 import type { AgendaData } from "./_lib/types.js";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-	if (handleCors(req, res)) return;
+type AgendaDependencies = {
+	handleCors: typeof handleCors;
+	requireAuth: typeof requireAuth;
+	getAgenda: typeof getAgenda;
+	setAgenda: typeof setAgenda;
+};
 
-	// ── GET — public ──────────────────────────────────────
-	if (req.method === "GET") {
-		const agenda = await getAgenda();
-		return res.status(200).json(agenda);
-	}
+const defaultDependencies: AgendaDependencies = {
+	handleCors,
+	requireAuth,
+	getAgenda,
+	setAgenda,
+};
 
-	// ── PUT — protected ───────────────────────────────────
-	if (req.method === "PUT") {
-		const auth = await requireAuth(req, res);
-		if (!auth) return; // requireAuth already sent 401
+export function createAgendaHandler(dependencies = defaultDependencies) {
+	return async function handler(req: VercelRequest, res: VercelResponse) {
+		if (dependencies.handleCors(req, res)) return;
 
-		const body = req.body as Partial<AgendaData>;
-
-		if (!body?.events || !Array.isArray(body.events)) {
-			return res
-				.status(400)
-				.json({ error: "Invalid agenda payload: expected { events: [...] }" });
+		// ── GET — public ──────────────────────────────────────
+		if (req.method === "GET") {
+			const agenda = await dependencies.getAgenda();
+			return res.status(200).json(agenda);
 		}
 
-		await setAgenda({ events: body.events });
-		return res.status(200).json({ ok: true });
-	}
+		// ── PUT — protected ───────────────────────────────────
+		if (req.method === "PUT") {
+			const auth = await dependencies.requireAuth(req, res);
+			if (!auth) return; // requireAuth already sent 401
 
-	return res.status(405).json({ error: "Method not allowed" });
+			const body = req.body as Partial<AgendaData>;
+
+			if (!body?.events || !Array.isArray(body.events)) {
+				return res
+					.status(400)
+					.json({ error: "Invalid agenda payload: expected { events: [...] }" });
+			}
+
+			await dependencies.setAgenda({ events: body.events });
+			return res.status(200).json({ ok: true });
+		}
+
+		return res.status(405).json({ error: "Method not allowed" });
+	};
 }
+
+export default createAgendaHandler();

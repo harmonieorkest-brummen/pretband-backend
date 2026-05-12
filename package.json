@@ -3,6 +3,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"build:test": "tsc -p tsconfig.test.json",
+		"test": "npm run build:test && node --test .test-dist/test/api/*.test.js .test-dist/test/lib/*.test.js",
 		"dev": "vercel dev",
 		"deploy": "vercel --prod"
 	},
