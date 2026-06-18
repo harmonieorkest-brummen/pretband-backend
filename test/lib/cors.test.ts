@@ -15,7 +15,7 @@ test("handleCors echoes the production origin when allowed", () => {
 	assert.equal(res.headers["Access-Control-Allow-Origin"], "https://pretband.nl");
 	assert.equal(
 		res.headers["Access-Control-Allow-Methods"],
-		"GET, POST, PUT, OPTIONS",
+		"GET, POST, PUT, DELETE, OPTIONS",
 	);
 	assert.equal(
 		res.headers["Access-Control-Allow-Headers"],

@@ -6,11 +6,17 @@ import { requireAuth } from "./_lib/jwt.js";
 type GalleryDependencies = {
 	handleCors: typeof handleCors;
 	requireAuth: typeof requireAuth;
+	list: typeof list;
+	put: typeof put;
+	del: typeof del;
 };
 
 const defaultDependencies: GalleryDependencies = {
 	handleCors,
 	requireAuth,
+	list,
+	put,
+	del,
 };
 
 export function createGalleryHandler(dependencies = defaultDependencies) {
@@ -20,7 +26,7 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 		// ── GET — public ──────────────────────────────────────
 		if (req.method === "GET") {
 			try {
-				const { blobs } = await list({ prefix: "gallery/" });
+				const { blobs } = await dependencies.list({ prefix: "gallery/" });
 				
 				// Sort by uploadedAt descending (newest first)
 				const sortedBlobs = blobs.sort((a, b) => 
@@ -58,7 +64,7 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 				// Generate a safe unique filename to avoid overwrites
 				const uniqueFilename = `gallery/${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
-				const blob = await put(uniqueFilename, buffer, {
+				const blob = await dependencies.put(uniqueFilename, buffer, {
 					access: "public",
 					contentType: contentType,
 				});
@@ -81,7 +87,7 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 					return res.status(400).json({ error: "Missing url" });
 				}
 
-				await del(url);
+				await dependencies.del(url);
 				return res.status(200).json({ ok: true });
 			} catch (error) {
 				console.error("Error deleting blob:", error);
