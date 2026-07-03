@@ -10,14 +10,14 @@
 		"deploy": "vercel --prod"
 	},
 	"devDependencies": {
-		"@types/node": "^25.9.3",
-		"@vercel/node": "^5.8.17",
+		"@types/node": "^26.1.0",
+		"@vercel/node": "^5.8.22",
 		"typescript": "^6.0.2"
 	},
 	"dependencies": {
-		"@vercel/blob": "^2.4.1",
+		"@vercel/blob": "^2.5.0",
 		"bcryptjs": "^3.0.3",
 		"jose": "^6.2.2",
-		"redis": "^6.0.0"
+		"redis": "^6.1.0"
 	}
 }
