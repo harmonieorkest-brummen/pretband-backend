@@ -82,9 +82,24 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 			if (!auth) return;
 
 			try {
-				const { url } = req.body;
-				if (!url) {
+				const { url } = req.body ?? {};
+				if (!url || typeof url !== "string") {
 					return res.status(400).json({ error: "Missing url" });
+				}
+
+				// Only allow deleting blobs we manage. Without this a valid admin
+				// token (or any future auth gap) could delete arbitrary blobs in
+				// the store, not just gallery images.
+				let pathname: string;
+				try {
+					pathname = new URL(url).pathname;
+				} catch {
+					return res.status(400).json({ error: "Invalid url" });
+				}
+				if (!pathname.startsWith("/gallery/")) {
+					return res
+						.status(400)
+						.json({ error: "Refusing to delete a blob outside the gallery/ namespace" });
 				}
 
 				await dependencies.del(url);

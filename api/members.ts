@@ -3,6 +3,7 @@ import { handleCors } from "./_lib/cors.js";
 import { requireAuth } from "./_lib/jwt.js";
 import { getMembers, setMembers } from "./_lib/redis.js";
 import type { MembersData } from "./_lib/types.js";
+import { isSafeKeySegment } from "./_lib/validation.js";
 
 type MembersDependencies = {
 	handleCors: typeof handleCors;
@@ -39,6 +40,23 @@ export function createMembersHandler(dependencies = defaultDependencies) {
 				return res.status(400).json({
 					error: "Invalid members payload: expected { sections: [...] }",
 				});
+			}
+
+			for (const section of body.sections) {
+				if (!section || typeof section !== "object" || !isSafeKeySegment(section.key)) {
+					return res.status(400).json({
+						error:
+							"Invalid section key: 1-128 chars, without ':', whitespace or glob characters",
+					});
+				}
+				if (
+					!Array.isArray(section.names) ||
+					section.names.some((n) => typeof n !== "string")
+				) {
+					return res.status(400).json({
+						error: `Invalid names for section "${section.key}": expected an array of strings`,
+					});
+				}
 			}
 
 			await dependencies.setMembers({ sections: body.sections });

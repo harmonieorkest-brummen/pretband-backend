@@ -113,6 +113,31 @@ test("agenda handler rejects invalid PUT payloads after successful auth", async 
 	}
 });
 
+test("agenda handler rejects event ids that are unsafe Redis key segments", async () => {
+	const handler = createAgendaHandler({
+		handleCors: () => false,
+		requireAuth: async () => ({ admin: true }),
+		getAgenda: async () => agenda,
+		setAgenda: async () => {
+			throw new Error("setAgenda should not be called");
+		},
+	});
+
+	const badBodies = [
+		{ events: [{ id: "bad:id", date: "", title: "", location: "" }] },
+		{ events: [{ id: "has space", date: "", title: "", location: "" }] },
+		{ events: [{ id: "glob*", date: "", title: "", location: "" }] },
+		{ events: [{ id: "", date: "", title: "", location: "" }] },
+	];
+
+	for (const body of badBodies) {
+		const req = createRequest({ method: "PUT", body });
+		const res = createResponse();
+		await handler(req, res);
+		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+	}
+});
+
 test("agenda handler stores valid PUT payloads and returns ok", async () => {
 	const stored: AgendaData[] = [];
 	const handler = createAgendaHandler({

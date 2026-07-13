@@ -12,7 +12,8 @@ type Call =
 	| ["hSet", string, Record<string, string>]
 	| ["expireAt", string, number]
 	| ["get", string]
-	| ["incr", string];
+	| ["incr", string]
+	| ["expire", string, number];
 
 class FakeRedisClient {
 	calls: Call[] = [];
@@ -68,6 +69,10 @@ class FakeRedisClient {
 		const next = (Number.parseInt(this.getResults.get(key) ?? "0", 10) || 0) + 1;
 		this.getResults.set(key, String(next));
 		return next;
+	}
+
+	async expire(key: string, seconds: number): Promise<void> {
+		this.calls.push(["expire", key, seconds]);
 	}
 }
 
@@ -363,4 +368,23 @@ test("bumpScan increments the per-slug scan counter", async () => {
 		["incr", "scans:flyer"],
 	]);
 	assert.equal(client.getResults.get("scans:flyer"), "2");
+});
+
+test("hitLoginRateLimit sets an expiry only on the first hit of a window", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	const first = await store.hitLoginRateLimit("1.2.3.4", 900);
+	const second = await store.hitLoginRateLimit("1.2.3.4", 900);
+	const third = await store.hitLoginRateLimit("1.2.3.4", 900);
+
+	assert.equal(first, 1);
+	assert.equal(second, 2);
+	assert.equal(third, 3);
+	assert.deepEqual(client.calls, [
+		["incr", "ratelimit:login:1.2.3.4"],
+		["expire", "ratelimit:login:1.2.3.4", 900],
+		["incr", "ratelimit:login:1.2.3.4"],
+		["incr", "ratelimit:login:1.2.3.4"],
+	]);
 });

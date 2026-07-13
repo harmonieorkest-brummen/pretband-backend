@@ -87,6 +87,26 @@ test("redirect handler falls back for a malformed slug without a lookup", async 
 	assert.equal(getCalls, 0);
 });
 
+test("redirect handler falls back when the stored destination is not http(s)", async () => {
+	let scanned = false;
+	const handler = createRedirectHandler({
+		handleCors: () => false,
+		getRedirect: async () => ({ url: "javascript:alert(1)" }),
+		bumpScan: async () => {
+			scanned = true;
+		},
+		fallbackUrl: () => FALLBACK,
+	});
+	const req = createRequest({ method: "GET", query: { slug: "poisoned" } });
+	const res = createResponse();
+
+	await handler(req, res);
+
+	assert.equal(res.statusCode, 302);
+	assert.equal(res.headers.Location, FALLBACK);
+	assert.equal(scanned, false, "must not count a scan for an invalid destination");
+});
+
 test("redirect handler still redirects when the scan counter fails", async () => {
 	const handler = createRedirectHandler({
 		handleCors: () => false,

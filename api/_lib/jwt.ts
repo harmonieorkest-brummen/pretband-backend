@@ -25,7 +25,14 @@ export async function verifyToken(token: string): Promise<JWTPayload> {
 	const { payload } = await jwtVerify(token, getSecret(), {
 		issuer: ISSUER,
 		audience: AUDIENCE,
+		// Pin the accepted algorithm so a token cannot be presented under a
+		// different `alg` than the one we sign with (defends against algorithm
+		// confusion). Authorization is claim-based, not merely signature-valid.
+		algorithms: ["HS256"],
 	});
+	if (payload.admin !== true) {
+		throw new Error("Token is missing the admin claim");
+	}
 	return payload;
 }
 

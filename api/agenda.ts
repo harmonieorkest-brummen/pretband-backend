@@ -3,6 +3,7 @@ import { handleCors } from "./_lib/cors.js";
 import { requireAuth } from "./_lib/jwt.js";
 import { getAgenda, setAgenda } from "./_lib/redis.js";
 import type { AgendaData } from "./_lib/types.js";
+import { isSafeKeySegment } from "./_lib/validation.js";
 
 type AgendaDependencies = {
 	handleCors: typeof handleCors;
@@ -39,6 +40,15 @@ export function createAgendaHandler(dependencies = defaultDependencies) {
 				return res
 					.status(400)
 					.json({ error: "Invalid agenda payload: expected { events: [...] }" });
+			}
+
+			for (const event of body.events) {
+				if (!event || typeof event !== "object" || !isSafeKeySegment(event.id)) {
+					return res.status(400).json({
+						error:
+							"Invalid event id: 1-128 chars, without ':', whitespace or glob characters",
+					});
+				}
 			}
 
 			await dependencies.setAgenda({ events: body.events });

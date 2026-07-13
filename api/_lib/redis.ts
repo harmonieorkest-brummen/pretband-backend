@@ -12,6 +12,7 @@ type RedisClient = {
 	expireAt(key: string, timestamp: number): Promise<unknown>;
 	get(key: string): Promise<string | null>;
 	incr(key: string): Promise<number>;
+	expire(key: string, seconds: number): Promise<unknown>;
 };
 
 const REDIRECT_PREFIX = "redirect:";
@@ -171,6 +172,22 @@ export function createRedisStore(
 			const client = await resolveClient();
 			await client.incr(`scans:${slug}`);
 		},
+
+		// Fixed-window counter for login throttling. Increments the counter for
+		// `identifier` and, on the first hit of a window, sets its expiry.
+		// Returns the current count within the window.
+		hitLoginRateLimit: async (
+			identifier: string,
+			windowSeconds: number,
+		): Promise<number> => {
+			const client = await resolveClient();
+			const key = `ratelimit:login:${identifier}`;
+			const count = await client.incr(key);
+			if (count === 1) {
+				await client.expire(key, windowSeconds);
+			}
+			return count;
+		},
 	};
 }
 
@@ -185,4 +202,5 @@ export const {
 	getRedirect,
 	setRedirects,
 	bumpScan,
+	hitLoginRateLimit,
 } = store;

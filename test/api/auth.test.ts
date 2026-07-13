@@ -4,6 +4,8 @@ import { createAuthHandler } from "../../api/auth.js";
 import { withEnvAsync } from "../helpers/env.js";
 import { createRequest, createResponse } from "../helpers/http.js";
 
+const allowAll = async () => true;
+
 test("auth handler stops on CORS preflight before validating the request", async () => {
 	let compared = false;
 	const handler = createAuthHandler({
@@ -13,6 +15,7 @@ test("auth handler stops on CORS preflight before validating the request", async
 			return true;
 		},
 		signToken: async () => "token",
+		checkRateLimit: allowAll,
 	});
 	const req = createRequest({ method: "OPTIONS" });
 	const res = createResponse();
@@ -29,6 +32,7 @@ test("auth handler rejects non-POST requests", async () => {
 		handleCors: () => false,
 		comparePassword: async () => true,
 		signToken: async () => "token",
+		checkRateLimit: allowAll,
 	});
 	const req = createRequest({ method: "GET" });
 	const res = createResponse();
@@ -39,11 +43,36 @@ test("auth handler rejects non-POST requests", async () => {
 	assert.deepEqual(res.jsonBody, { error: "Method not allowed" });
 });
 
+test("auth handler returns 429 when rate limited, without comparing the password", async () => {
+	let compared = false;
+	const handler = createAuthHandler({
+		handleCors: () => false,
+		comparePassword: async () => {
+			compared = true;
+			return true;
+		},
+		signToken: async () => "token",
+		checkRateLimit: async () => false,
+	});
+	const req = createRequest({ method: "POST", body: { password: "whatever" } });
+	const res = createResponse();
+
+	await handler(req, res);
+
+	assert.equal(res.statusCode, 429);
+	assert.deepEqual(res.jsonBody, {
+		error: "Too many attempts. Please try again later.",
+	});
+	assert.equal(res.headers["Retry-After"], "900");
+	assert.equal(compared, false);
+});
+
 test("auth handler rejects missing password values", async () => {
 	const handler = createAuthHandler({
 		handleCors: () => false,
 		comparePassword: async () => true,
 		signToken: async () => "token",
+		checkRateLimit: allowAll,
 	});
 
 	for (const body of [undefined, {}, { password: "" }, { password: 123 }]) {
@@ -69,6 +98,7 @@ test("auth handler returns server misconfiguration when ADMIN_PASSWORD_HASH is m
 				handleCors: () => false,
 				comparePassword: async () => true,
 				signToken: async () => "token",
+				checkRateLimit: allowAll,
 			});
 			const req = createRequest({
 				method: "POST",
@@ -101,6 +131,7 @@ test("auth handler rejects invalid passwords without signing a token", async () 
 				signCalls += 1;
 				return "token";
 			},
+			checkRateLimit: allowAll,
 		});
 		const req = createRequest({
 			method: "POST",
@@ -127,6 +158,7 @@ test("auth handler signs and returns a token for a valid password", async () => 
 				return true;
 			},
 			signToken: async () => "signed-token",
+			checkRateLimit: allowAll,
 		});
 		const req = createRequest({
 			method: "POST",

@@ -114,6 +114,32 @@ test("members handler rejects invalid PUT payloads after successful auth", async
 	}
 });
 
+test("members handler rejects section keys and names that are unsafe", async () => {
+	const handler = createMembersHandler({
+		handleCors: () => false,
+		requireAuth: async () => ({ admin: true }),
+		getMembers: async () => members,
+		setMembers: async () => {
+			throw new Error("setMembers should not be called");
+		},
+	});
+
+	const badBodies = [
+		{ sections: [{ key: "bad:key", names: [] }] }, // colon in key
+		{ sections: [{ key: "has space", names: [] }] }, // whitespace in key
+		{ sections: [{ key: "", names: [] }] }, // empty key
+		{ sections: [{ key: "ok", names: [123] }] }, // non-string name
+		{ sections: [{ key: "ok", names: "nope" }] }, // names not an array
+	];
+
+	for (const body of badBodies) {
+		const req = createRequest({ method: "PUT", body });
+		const res = createResponse();
+		await handler(req, res);
+		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+	}
+});
+
 test("members handler stores valid PUT payloads and returns ok", async () => {
 	const stored: MembersData[] = [];
 	const handler = createMembersHandler({

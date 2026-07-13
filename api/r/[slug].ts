@@ -18,6 +18,16 @@ const defaultDependencies: RedirectDependencies = {
 
 const SLUG_PATTERN = /^[a-z0-9-]{1,64}$/;
 
+/** Only http(s) destinations may be emitted as a Location. */
+function isHttpUrl(value: string): boolean {
+	try {
+		const { protocol } = new URL(value);
+		return protocol === "http:" || protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Public QR target: GET /r/:slug → 302 to the configured destination.
  *
@@ -50,7 +60,10 @@ export function createRedirectHandler(dependencies = defaultDependencies) {
 		}
 
 		const entry = await dependencies.getRedirect(slug);
-		if (!entry) {
+		// Re-validate the stored destination at emit time. Write-time validation
+		// already restricts targets to http(s), but this also protects against a
+		// value written directly to the datastore out-of-band.
+		if (!entry || !isHttpUrl(entry.url)) {
 			return redirectTo(fallback);
 		}
 

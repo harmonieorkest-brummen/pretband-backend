@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { SignJWT } from "jose";
 import { requireAuth, signToken, verifyToken } from "../../api/_lib/jwt.js";
 import { withEnvAsync } from "../helpers/env.js";
 import { createRequest, createResponse } from "../helpers/http.js";
@@ -38,6 +39,43 @@ test("verifyToken rejects tampered tokens", async () => {
 		const tampered = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
 
 		await assert.rejects(() => verifyToken(tampered));
+	});
+});
+
+test("verifyToken rejects a correctly-signed token that lacks the admin claim", async () => {
+	await withEnvAsync({ JWT_SECRET: "test-secret" }, async () => {
+		const secret = new TextEncoder().encode("test-secret");
+		const token = await new SignJWT({ admin: false })
+			.setProtectedHeader({ alg: "HS256" })
+			.setIssuedAt()
+			.setIssuer("pretband-api")
+			.setAudience("pretband-admin")
+			.setExpirationTime("8h")
+			.sign(secret);
+
+		await assert.rejects(() => verifyToken(token), /admin claim/);
+	});
+});
+
+test("requireAuth responds 401 for a valid-signature token without the admin claim", async () => {
+	await withEnvAsync({ JWT_SECRET: "test-secret" }, async () => {
+		const secret = new TextEncoder().encode("test-secret");
+		const token = await new SignJWT({ admin: false })
+			.setProtectedHeader({ alg: "HS256" })
+			.setIssuedAt()
+			.setIssuer("pretband-api")
+			.setAudience("pretband-admin")
+			.setExpirationTime("8h")
+			.sign(secret);
+
+		const req = createRequest({ headers: { authorization: `Bearer ${token}` } });
+		const res = createResponse();
+
+		const payload = await requireAuth(req, res);
+
+		assert.equal(payload, null);
+		assert.equal(res.statusCode, 401);
+		assert.deepEqual(res.jsonBody, { error: "Invalid or expired token" });
 	});
 });
 

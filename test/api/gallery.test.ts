@@ -113,23 +113,21 @@ test("gallery POST uploads valid file and returns URL", async () => {
 	assert.equal((res.jsonBody as any).url.startsWith("https://blob/gallery/"), true);
 });
 
-test("gallery DELETE deletes existing blob", async () => {
+test("gallery DELETE deletes an existing blob in the gallery/ namespace", async () => {
 	let delCalls = 0;
+	const url = "https://abc.public.blob.vercel-storage.com/gallery/123-test.png";
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
 		list: async () => { throw new Error("Should not be called"); },
 		put: async () => { throw new Error("Should not be called"); },
-		del: async (url) => {
-			assert.equal(url, "https://blob/test.png");
+		del: async (target) => {
+			assert.equal(target, url);
 			delCalls++;
 		},
 	});
-	
-	const req = createRequest({
-		method: "DELETE",
-		body: { url: "https://blob/test.png" },
-	});
+
+	const req = createRequest({ method: "DELETE", body: { url } });
 	const res = createResponse();
 
 	await handler(req, res);
@@ -137,4 +135,48 @@ test("gallery DELETE deletes existing blob", async () => {
 	assert.equal(res.statusCode, 200);
 	assert.equal(delCalls, 1);
 	assert.deepEqual(res.jsonBody, { ok: true });
+});
+
+test("gallery DELETE refuses a blob outside the gallery/ namespace", async () => {
+	let delCalls = 0;
+	const handler = createGalleryHandler({
+		handleCors: () => false,
+		requireAuth: async () => ({ admin: true }),
+		list: async () => { throw new Error("Should not be called"); },
+		put: async () => { throw new Error("Should not be called"); },
+		del: async () => {
+			delCalls++;
+		},
+	});
+
+	const req = createRequest({
+		method: "DELETE",
+		body: { url: "https://abc.public.blob.vercel-storage.com/secrets/prod.env" },
+	});
+	const res = createResponse();
+
+	await handler(req, res);
+
+	assert.equal(res.statusCode, 400);
+	assert.equal(delCalls, 0);
+	assert.deepEqual(res.jsonBody, {
+		error: "Refusing to delete a blob outside the gallery/ namespace",
+	});
+});
+
+test("gallery DELETE rejects a missing or malformed url", async () => {
+	const handler = createGalleryHandler({
+		handleCors: () => false,
+		requireAuth: async () => ({ admin: true }),
+		list: async () => { throw new Error("Should not be called"); },
+		put: async () => { throw new Error("Should not be called"); },
+		del: async () => { throw new Error("Should not be called"); },
+	});
+
+	for (const body of [undefined, {}, { url: "" }, { url: "not-a-url" }]) {
+		const req = createRequest({ method: "DELETE", body });
+		const res = createResponse();
+		await handler(req, res);
+		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+	}
 });

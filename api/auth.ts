@@ -2,17 +2,24 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import bcrypt from "bcryptjs";
 import { handleCors } from "./_lib/cors.js";
 import { signToken } from "./_lib/jwt.js";
+import {
+	createLoginRateLimiter,
+	RATE_LIMIT_WINDOW_SECONDS,
+} from "./_lib/rateLimit.js";
+import { hitLoginRateLimit } from "./_lib/redis.js";
 
 type AuthDependencies = {
 	handleCors: typeof handleCors;
 	comparePassword: typeof bcrypt.compare;
 	signToken: typeof signToken;
+	checkRateLimit: (req: VercelRequest) => Promise<boolean>;
 };
 
 const defaultDependencies: AuthDependencies = {
 	handleCors,
 	comparePassword: bcrypt.compare,
 	signToken,
+	checkRateLimit: createLoginRateLimiter(hitLoginRateLimit),
 };
 
 export function createAuthHandler(dependencies = defaultDependencies) {
@@ -21,6 +28,15 @@ export function createAuthHandler(dependencies = defaultDependencies) {
 
 		if (req.method !== "POST") {
 			return res.status(405).json({ error: "Method not allowed" });
+		}
+
+		// Throttle before doing any password work to blunt online guessing.
+		const allowed = await dependencies.checkRateLimit(req);
+		if (!allowed) {
+			res.setHeader("Retry-After", String(RATE_LIMIT_WINDOW_SECONDS));
+			return res
+				.status(429)
+				.json({ error: "Too many attempts. Please try again later." });
 		}
 
 		const { password } = (req.body ?? {}) as { password?: string };
