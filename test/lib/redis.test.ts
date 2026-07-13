@@ -10,7 +10,9 @@ type Call =
 	| ["hGetAll", string]
 	| ["ttl", string]
 	| ["hSet", string, Record<string, string>]
-	| ["expireAt", string, number];
+	| ["expireAt", string, number]
+	| ["get", string]
+	| ["incr", string];
 
 class FakeRedisClient {
 	calls: Call[] = [];
@@ -18,6 +20,7 @@ class FakeRedisClient {
 	memberResults = new Map<string, string[]>();
 	hashResults = new Map<string, Record<string, string>>();
 	ttlResults = new Map<string, number>();
+	getResults = new Map<string, string | null>();
 
 	async keys(pattern: string): Promise<string[]> {
 		this.calls.push(["keys", pattern]);
@@ -53,6 +56,18 @@ class FakeRedisClient {
 
 	async expireAt(key: string, timestamp: number): Promise<void> {
 		this.calls.push(["expireAt", key, timestamp]);
+	}
+
+	async get(key: string): Promise<string | null> {
+		this.calls.push(["get", key]);
+		return this.getResults.get(key) ?? null;
+	}
+
+	async incr(key: string): Promise<number> {
+		this.calls.push(["incr", key]);
+		const next = (Number.parseInt(this.getResults.get(key) ?? "0", 10) || 0) + 1;
+		this.getResults.set(key, String(next));
+		return next;
 	}
 }
 
@@ -261,4 +276,91 @@ test("setAgenda writes invalid dates without scheduling expiration", async () =>
 			{ date: "not-a-date", title: "Mystery", location: "Unknown" },
 		],
 	]);
+});
+
+test("getRedirects returns an empty list when Redis has no redirect keys", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	const result = await store.getRedirects();
+
+	assert.deepEqual(result, { redirects: [] });
+	assert.deepEqual(client.calls, [["keys", "redirect:*"]]);
+});
+
+test("getRedirects maps hashes, includes scan counts, and sorts by slug", async () => {
+	const client = new FakeRedisClient();
+	client.keyResults.set("redirect:*", ["redirect:poster", "redirect:flyer"]);
+	client.hashResults.set("redirect:poster", {
+		url: "https://youtu.be/abc",
+		label: "Poster",
+	});
+	client.hashResults.set("redirect:flyer", {
+		url: "https://pretband.nl/#/#agenda",
+		label: "Flyer",
+	});
+	client.getResults.set("scans:poster", "42");
+	// scans:flyer intentionally absent → defaults to 0
+	const store = createStore(client);
+
+	const result = await store.getRedirects();
+
+	assert.deepEqual(result, {
+		redirects: [
+			{
+				slug: "flyer",
+				url: "https://pretband.nl/#/#agenda",
+				label: "Flyer",
+				scans: 0,
+			},
+			{ slug: "poster", url: "https://youtu.be/abc", label: "Poster", scans: 42 },
+		],
+	});
+});
+
+test("getRedirect returns the destination for a known slug and null otherwise", async () => {
+	const client = new FakeRedisClient();
+	client.hashResults.set("redirect:flyer", { url: "https://x.nl", label: "" });
+	const store = createStore(client);
+
+	assert.deepEqual(await store.getRedirect("flyer"), { url: "https://x.nl" });
+	assert.equal(await store.getRedirect("missing"), null);
+});
+
+test("setRedirects replaces redirect keys but leaves scan counters untouched", async () => {
+	const client = new FakeRedisClient();
+	client.keyResults.set("redirect:*", ["redirect:old"]);
+	const store = createStore(client);
+
+	await store.setRedirects({
+		redirects: [
+			{ slug: "flyer", url: "https://pretband.nl/#/#agenda", label: "Flyer" },
+			{ slug: "insta", url: "https://instagram.com/pretband" },
+		],
+	});
+
+	assert.deepEqual(client.calls, [
+		["keys", "redirect:*"],
+		["del", ["redirect:old"]],
+		[
+			"hSet",
+			"redirect:flyer",
+			{ url: "https://pretband.nl/#/#agenda", label: "Flyer" },
+		],
+		["hSet", "redirect:insta", { url: "https://instagram.com/pretband", label: "" }],
+	]);
+});
+
+test("bumpScan increments the per-slug scan counter", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	await store.bumpScan("flyer");
+	await store.bumpScan("flyer");
+
+	assert.deepEqual(client.calls, [
+		["incr", "scans:flyer"],
+		["incr", "scans:flyer"],
+	]);
+	assert.equal(client.getResults.get("scans:flyer"), "2");
 });

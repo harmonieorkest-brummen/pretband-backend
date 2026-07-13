@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import type { AgendaData, MembersData } from "./types.js";
+import type { AgendaData, MembersData, RedirectsData } from "./types.js";
 
 type RedisClient = {
 	keys(pattern: string): Promise<string[]>;
@@ -10,7 +10,11 @@ type RedisClient = {
 	ttl(key: string): Promise<number>;
 	hSet(key: string, data: Record<string, string>): Promise<unknown>;
 	expireAt(key: string, timestamp: number): Promise<unknown>;
+	get(key: string): Promise<string | null>;
+	incr(key: string): Promise<number>;
 };
+
+const REDIRECT_PREFIX = "redirect:";
 
 let clientPromise: Promise<RedisClient> | null = null;
 
@@ -113,9 +117,72 @@ export function createRedisStore(
 				}
 			}
 		},
+
+		getRedirects: async (): Promise<RedirectsData> => {
+			const client = await resolveClient();
+			const keys = await client.keys(`${REDIRECT_PREFIX}*`);
+
+			const redirects: RedirectsData["redirects"] = [];
+			for (const key of keys) {
+				const slug = key.slice(REDIRECT_PREFIX.length);
+				const data = await client.hGetAll(key);
+				if (!data.url) continue;
+
+				const scansRaw = await client.get(`scans:${slug}`);
+				redirects.push({
+					slug,
+					url: data.url,
+					label: data.label || "",
+					scans: scansRaw ? Number.parseInt(scansRaw, 10) || 0 : 0,
+				});
+			}
+
+			redirects.sort((a, b) => a.slug.localeCompare(b.slug));
+			return { redirects };
+		},
+
+		// Single lookup used by the public /r/:slug redirect endpoint.
+		getRedirect: async (slug: string): Promise<{ url: string } | null> => {
+			const client = await resolveClient();
+			const data = await client.hGetAll(`${REDIRECT_PREFIX}${slug}`);
+			if (!data?.url) return null;
+			return { url: data.url };
+		},
+
+		setRedirects: async (data: RedirectsData) => {
+			const client = await resolveClient();
+			const existingKeys = await client.keys(`${REDIRECT_PREFIX}*`);
+			if (existingKeys.length > 0) {
+				await client.del(existingKeys);
+			}
+
+			for (const redirect of data.redirects) {
+				await client.hSet(`${REDIRECT_PREFIX}${redirect.slug}`, {
+					url: redirect.url,
+					label: redirect.label || "",
+				});
+			}
+			// scans:* counters are intentionally left untouched so scan totals
+			// survive config edits. Removed slugs leave a harmless orphan counter.
+		},
+
+		// Fire-and-forget scan counter; failures must never block a redirect.
+		bumpScan: async (slug: string) => {
+			const client = await resolveClient();
+			await client.incr(`scans:${slug}`);
+		},
 	};
 }
 
 const store = createRedisStore(getClient);
 
-export const { getMembers, setMembers, getAgenda, setAgenda } = store;
+export const {
+	getMembers,
+	setMembers,
+	getAgenda,
+	setAgenda,
+	getRedirects,
+	getRedirect,
+	setRedirects,
+	bumpScan,
+} = store;
