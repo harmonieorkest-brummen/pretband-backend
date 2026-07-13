@@ -26,12 +26,19 @@ test("handleCors reflects the production origin when allowed", () => {
 });
 
 test("handleCors reflects the local dev origin outside production", () => {
-	const req = createRequest({ headers: { origin: "http://localhost:5173" } });
-	const res = createResponse();
+	// Pin a non-production env: the deploy build runs `npm test` with
+	// VERCEL_ENV=production, where localhost is (correctly) not allowed.
+	withEnv({ VERCEL_ENV: "development" }, () => {
+		const req = createRequest({ headers: { origin: "http://localhost:5173" } });
+		const res = createResponse();
 
-	handleCors(req, res);
+		handleCors(req, res);
 
-	assert.equal(res.headers["Access-Control-Allow-Origin"], "http://localhost:5173");
+		assert.equal(
+			res.headers["Access-Control-Allow-Origin"],
+			"http://localhost:5173",
+		);
+	});
 });
 
 test("handleCors sends NO allow-origin header for a disallowed origin", () => {
@@ -77,16 +84,21 @@ test("handleCors still reflects the production origin in production", () => {
 });
 
 test("handleCors answers OPTIONS preflight requests and stops the caller", () => {
-	const req = createRequest({
-		method: "OPTIONS",
-		headers: { origin: "http://localhost:5173" },
+	withEnv({ VERCEL_ENV: "development" }, () => {
+		const req = createRequest({
+			method: "OPTIONS",
+			headers: { origin: "http://localhost:5173" },
+		});
+		const res = createResponse();
+
+		const handled = handleCors(req, res);
+
+		assert.equal(handled, true);
+		assert.equal(res.statusCode, 204);
+		assert.equal(res.ended, true);
+		assert.equal(
+			res.headers["Access-Control-Allow-Origin"],
+			"http://localhost:5173",
+		);
 	});
-	const res = createResponse();
-
-	const handled = handleCors(req, res);
-
-	assert.equal(handled, true);
-	assert.equal(res.statusCode, 204);
-	assert.equal(res.ended, true);
-	assert.equal(res.headers["Access-Control-Allow-Origin"], "http://localhost:5173");
 });
