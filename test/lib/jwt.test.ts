@@ -36,9 +36,21 @@ test("verifyToken rejects tokens signed with a different secret", async () => {
 test("verifyToken rejects tampered tokens", async () => {
 	await withEnvAsync({ JWT_SECRET: "test-secret" }, async () => {
 		const token = await signToken();
-		const tampered = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
+		const [header, payload, signature] = token.split(".");
 
-		await assert.rejects(() => verifyToken(tampered));
+		// Corrupt the FIRST signature character. Flipping the *last* char is
+		// unreliable: a 32-byte HS256 signature is 43 base64url chars whose final
+		// char carries only 4 significant bits, so some flips change only padding
+		// bits and decode to the exact same signature. The first char's 6 bits are
+		// all significant, so this always changes the signature bytes.
+		const badSignature = `${header}.${payload}.${
+			signature[0] === "A" ? "B" : "A"
+		}${signature.slice(1)}`;
+		await assert.rejects(() => verifyToken(badSignature));
+
+		// Corrupt the payload: the signature no longer matches the claims.
+		const badPayload = `${header}.${payload[0] === "A" ? "B" : "A"}${payload.slice(1)}.${signature}`;
+		await assert.rejects(() => verifyToken(badPayload));
 	});
 });
 
