@@ -13,7 +13,8 @@ type Call =
 	| ["expireAt", string, number]
 	| ["get", string]
 	| ["incr", string]
-	| ["expire", string, number];
+	| ["expire", string, number]
+	| ["set", string, string];
 
 class FakeRedisClient {
 	calls: Call[] = [];
@@ -73,6 +74,12 @@ class FakeRedisClient {
 
 	async expire(key: string, seconds: number): Promise<void> {
 		this.calls.push(["expire", key, seconds]);
+	}
+
+	async set(key: string, value: string): Promise<string> {
+		this.calls.push(["set", key, value]);
+		this.getResults.set(key, value);
+		return "OK";
 	}
 }
 
@@ -386,5 +393,59 @@ test("hitLoginRateLimit sets an expiry only on the first hit of a window", async
 		["expire", "ratelimit:login:1.2.3.4", 900],
 		["incr", "ratelimit:login:1.2.3.4"],
 		["incr", "ratelimit:login:1.2.3.4"],
+	]);
+});
+
+test("incrementStat increments a plain counter with no expiry", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	assert.equal(await store.incrementStat("stats:confetti"), 1);
+	assert.equal(await store.incrementStat("stats:confetti"), 2);
+	assert.deepEqual(client.calls, [
+		["incr", "stats:confetti"],
+		["incr", "stats:confetti"],
+	]);
+});
+
+test("incrementStatWithTtl sets the TTL only on the first hit", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	await store.incrementStatWithTtl("stats:login_fail_24h", 86400);
+	await store.incrementStatWithTtl("stats:login_fail_24h", 86400);
+
+	assert.deepEqual(client.calls, [
+		["incr", "stats:login_fail_24h"],
+		["expire", "stats:login_fail_24h", 86400],
+		["incr", "stats:login_fail_24h"],
+	]);
+});
+
+test("readStat returns the number, or 0 when absent or unparseable", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+	client.getResults.set("stats:confetti", "42");
+	client.getResults.set("stats:bad", "not-a-number");
+
+	assert.equal(await store.readStat("stats:confetti"), 42);
+	assert.equal(await store.readStat("stats:missing"), 0);
+	assert.equal(await store.readStat("stats:bad"), 0);
+});
+
+test("setStat and readRawStat round-trip a raw string value", async () => {
+	const client = new FakeRedisClient();
+	const store = createStore(client);
+
+	await store.setStat("stats:last_login", "2026-07-14T10:00:00.000Z");
+	assert.equal(
+		await store.readRawStat("stats:last_login"),
+		"2026-07-14T10:00:00.000Z",
+	);
+	assert.equal(await store.readRawStat("stats:never_set"), null);
+	assert.deepEqual(client.calls, [
+		["set", "stats:last_login", "2026-07-14T10:00:00.000Z"],
+		["get", "stats:last_login"],
+		["get", "stats:never_set"],
 	]);
 });

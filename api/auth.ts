@@ -6,13 +6,35 @@ import {
 	createLoginRateLimiter,
 	RATE_LIMIT_WINDOW_SECONDS,
 } from "./_lib/rateLimit.js";
-import { hitLoginRateLimit } from "./_lib/redis.js";
+import {
+	hitLoginRateLimit,
+	incrementStatWithTtl,
+	setStat,
+} from "./_lib/redis.js";
+import { FAILED_LOGIN_TTL_SECONDS, STAT_KEYS } from "./_lib/stats.js";
+
+/** Records a login attempt for the dashboard. Best-effort: never blocks login. */
+async function defaultRecordLoginOutcome(success: boolean): Promise<void> {
+	try {
+		if (success) {
+			await setStat(STAT_KEYS.lastLogin, new Date().toISOString());
+		} else {
+			await incrementStatWithTtl(
+				STAT_KEYS.failedLogins24h,
+				FAILED_LOGIN_TTL_SECONDS,
+			);
+		}
+	} catch {
+		// stats are best-effort; a stats failure must not affect authentication
+	}
+}
 
 type AuthDependencies = {
 	handleCors: typeof handleCors;
 	comparePassword: typeof bcrypt.compare;
 	signToken: typeof signToken;
 	checkRateLimit: (req: VercelRequest) => Promise<boolean>;
+	recordLoginOutcome?: (success: boolean) => Promise<void>;
 };
 
 const defaultDependencies: AuthDependencies = {
@@ -20,6 +42,7 @@ const defaultDependencies: AuthDependencies = {
 	comparePassword: bcrypt.compare,
 	signToken,
 	checkRateLimit: createLoginRateLimiter(hitLoginRateLimit),
+	recordLoginOutcome: defaultRecordLoginOutcome,
 };
 
 export function createAuthHandler(dependencies = defaultDependencies) {
@@ -53,10 +76,12 @@ export function createAuthHandler(dependencies = defaultDependencies) {
 
 		const valid = await dependencies.comparePassword(password, hash);
 		if (!valid) {
+			await dependencies.recordLoginOutcome?.(false);
 			// Consistent timing response to prevent brute-force probing
 			return res.status(401).json({ error: "Invalid password" });
 		}
 
+		await dependencies.recordLoginOutcome?.(true);
 		const token = await dependencies.signToken();
 		return res.status(200).json({ token });
 	};

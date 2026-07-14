@@ -11,6 +11,7 @@ type RedisClient = {
 	hSet(key: string, data: Record<string, string>): Promise<unknown>;
 	expireAt(key: string, timestamp: number): Promise<unknown>;
 	get(key: string): Promise<string | null>;
+	set(key: string, value: string): Promise<unknown>;
 	incr(key: string): Promise<number>;
 	expire(key: string, seconds: number): Promise<unknown>;
 };
@@ -188,6 +189,47 @@ export function createRedisStore(
 			}
 			return count;
 		},
+
+		// ── Dashboard stat counters ──────────────────────────
+		// Callers pass fixed, trusted keys (never raw user input).
+
+		/** Increment an all-time counter and return the new total. */
+		incrementStat: async (key: string): Promise<number> => {
+			const client = await resolveClient();
+			return client.incr(key);
+		},
+
+		/** Increment a windowed counter, setting its TTL on the first hit. */
+		incrementStatWithTtl: async (
+			key: string,
+			ttlSeconds: number,
+		): Promise<number> => {
+			const client = await resolveClient();
+			const count = await client.incr(key);
+			if (count === 1) {
+				await client.expire(key, ttlSeconds);
+			}
+			return count;
+		},
+
+		/** Read a numeric counter; returns 0 when absent or unparseable. */
+		readStat: async (key: string): Promise<number> => {
+			const client = await resolveClient();
+			const raw = await client.get(key);
+			return raw ? Number.parseInt(raw, 10) || 0 : 0;
+		},
+
+		/** Store a raw string value (e.g. a timestamp). */
+		setStat: async (key: string, value: string): Promise<void> => {
+			const client = await resolveClient();
+			await client.set(key, value);
+		},
+
+		/** Read a raw string value; null when absent. */
+		readRawStat: async (key: string): Promise<string | null> => {
+			const client = await resolveClient();
+			return client.get(key);
+		},
 	};
 }
 
@@ -203,4 +245,9 @@ export const {
 	setRedirects,
 	bumpScan,
 	hitLoginRateLimit,
+	incrementStat,
+	incrementStatWithTtl,
+	readStat,
+	setStat,
+	readRawStat,
 } = store;

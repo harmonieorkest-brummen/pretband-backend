@@ -173,3 +173,47 @@ test("auth handler signs and returns a token for a valid password", async () => 
 		assert.deepEqual(compareCalls, [["correct-password", "stored-hash"]]);
 	});
 });
+
+test("auth handler records a failed outcome on an invalid password", async () => {
+	await withEnvAsync({ ADMIN_PASSWORD_HASH: "stored-hash" }, async () => {
+		const outcomes: boolean[] = [];
+		const handler = createAuthHandler({
+			handleCors: () => false,
+			comparePassword: async () => false,
+			signToken: async () => "token",
+			checkRateLimit: allowAll,
+			recordLoginOutcome: async (success) => {
+				outcomes.push(success);
+			},
+		});
+		const req = createRequest({ method: "POST", body: { password: "nope" } });
+		const res = createResponse();
+
+		await handler(req, res);
+
+		assert.equal(res.statusCode, 401);
+		assert.deepEqual(outcomes, [false]);
+	});
+});
+
+test("auth handler records a successful outcome on a valid password", async () => {
+	await withEnvAsync({ ADMIN_PASSWORD_HASH: "stored-hash" }, async () => {
+		const outcomes: boolean[] = [];
+		const handler = createAuthHandler({
+			handleCors: () => false,
+			comparePassword: async () => true,
+			signToken: async () => "signed-token",
+			checkRateLimit: allowAll,
+			recordLoginOutcome: async (success) => {
+				outcomes.push(success);
+			},
+		});
+		const req = createRequest({ method: "POST", body: { password: "ok" } });
+		const res = createResponse();
+
+		await handler(req, res);
+
+		assert.equal(res.statusCode, 200);
+		assert.deepEqual(outcomes, [true]);
+	});
+});
