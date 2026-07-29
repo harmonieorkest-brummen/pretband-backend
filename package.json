@@ -10,14 +10,24 @@
 		"deploy": "vercel --prod"
 	},
 	"devDependencies": {
-		"@types/node": "^26.1.1",
-		"@vercel/node": "^5.8.26",
-		"typescript": "^6.0.2"
+		"@types/node": "^26.1.2",
+		"@vercel/node": "^5.9.0",
+		"typescript": "^7.0.2"
 	},
 	"dependencies": {
 		"@vercel/blob": "^2.6.1",
 		"bcryptjs": "^3.0.3",
 		"jose": "^6.2.4",
 		"redis": "^6.1.0"
+	},
+	"overrides": {
+		"ajv": "^8.20.0",
+		"js-yaml": "^4.3.0",
+		"path-to-regexp": "^6.3.0",
+		"smol-toml": "^1.7.1",
+		"undici": "^6.28.0",
+		"@vercel/python-analysis": {
+			"minimatch": "^10.2.6"
+		}
 	}
 }
