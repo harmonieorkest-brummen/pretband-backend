@@ -18,7 +18,7 @@
 		"@vercel/blob": "^2.7.0",
 		"bcryptjs": "^3.0.3",
 		"jose": "^6.2.8",
-		"redis": "^6.1.0"
+		"redis": "^6.2.1"
 	},
 	"overrides": {
 		"ajv": "^8.20.0",
