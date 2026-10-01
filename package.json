@@ -10,7 +10,7 @@
 		"deploy": "vercel --prod"
 	},
 	"devDependencies": {
-		"@types/node": "^26.4.0",
+		"@types/node": "^26.6.3",
 		"@vercel/node": "^12.0.1",
 		"typescript": "^6.0.2"
 	},
