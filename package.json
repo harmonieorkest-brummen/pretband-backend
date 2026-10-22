@@ -15,7 +15,7 @@
 		"typescript": "^6.0.2"
 	},
 	"dependencies": {
-		"@vercel/blob": "^2.8.1",
+		"@vercel/blob": "^2.8.2",
 		"bcryptjs": "^3.0.3",
 		"jose": "^6.2.10",
 		"redis": "^6.3.0"
