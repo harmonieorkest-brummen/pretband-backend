@@ -17,7 +17,7 @@
 	"dependencies": {
 		"@vercel/blob": "^2.8.1",
 		"bcryptjs": "^3.0.3",
-		"jose": "^6.2.10",
+		"jose": "^6.2.13",
 		"redis": "^6.3.0"
 	},
 	"overrides": {
