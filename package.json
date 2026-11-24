@@ -30,7 +30,7 @@
 		"smol-toml": "^1.7.1",
 		"undici": "^6.28.0",
 		"@vercel/python-analysis": {
-			"minimatch": "^10.2.6"
+			"minimatch": "^11.0.0"
 		}
 	}
 }
