@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { RedirectsData } from "../../api/_lib/types.js";
 import {
 	createRedirectsHandler,
 	validateRedirectsPayload,
 } from "../../api/redirects.js";
-import type { RedirectsData } from "../../api/_lib/types.js";
 import { createRequest, createResponse } from "../helpers/http.js";
 
 const redirects: RedirectsData = {
@@ -120,7 +120,11 @@ test("redirects handler rejects invalid PUT payloads after successful auth", asy
 
 		await handler(req, res);
 
-		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+		assert.equal(
+			res.statusCode,
+			400,
+			`expected 400 for ${JSON.stringify(body)}`,
+		);
 	}
 });
 
@@ -176,8 +180,9 @@ test("validateRedirectsPayload accepts a valid payload and rejects bad slugs and
 		"empty list is valid",
 	);
 	assert.match(
-		validateRedirectsPayload({ redirects: [{ slug: "UP", url: "https://x.nl" }] }) ??
-			"",
+		validateRedirectsPayload({
+			redirects: [{ slug: "UP", url: "https://x.nl" }],
+		}) ?? "",
 		/Invalid slug/,
 	);
 	assert.match(

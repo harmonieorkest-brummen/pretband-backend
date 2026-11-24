@@ -80,7 +80,9 @@ test("requireAuth responds 401 for a valid-signature token without the admin cla
 			.setExpirationTime("8h")
 			.sign(secret);
 
-		const req = createRequest({ headers: { authorization: `Bearer ${token}` } });
+		const req = createRequest({
+			headers: { authorization: `Bearer ${token}` },
+		});
 		const res = createResponse();
 
 		const payload = await requireAuth(req, res);

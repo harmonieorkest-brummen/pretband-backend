@@ -13,7 +13,12 @@ import { importPKCS8, SignJWT } from "jose";
 
 export type TrafficStats =
 	| { connected: false; reason: string }
-	| { connected: true; rangeDays: number; activeUsers: number; pageViews: number };
+	| {
+			connected: true;
+			rangeDays: number;
+			activeUsers: number;
+			pageViews: number;
+	  };
 
 type ServiceAccount = { client_email: string; private_key: string };
 type FetchImpl = typeof fetch;
@@ -95,7 +100,9 @@ export function createTrafficReader(
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						dateRanges: [{ startDate: `${RANGE_DAYS}daysAgo`, endDate: "today" }],
+						dateRanges: [
+							{ startDate: `${RANGE_DAYS}daysAgo`, endDate: "today" },
+						],
 						metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }],
 					}),
 				},

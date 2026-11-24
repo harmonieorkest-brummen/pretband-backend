@@ -27,13 +27,13 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 		if (req.method === "GET") {
 			try {
 				const { blobs } = await dependencies.list({ prefix: "gallery/" });
-				
+
 				// Sort by uploadedAt descending (newest first)
-				const sortedBlobs = blobs.sort((a, b) => 
-					b.uploadedAt.getTime() - a.uploadedAt.getTime()
+				const sortedBlobs = blobs.sort(
+					(a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime(),
 				);
-				
-				return res.status(200).json({ images: sortedBlobs.map(b => b.url) });
+
+				return res.status(200).json({ images: sortedBlobs.map((b) => b.url) });
 			} catch (error) {
 				console.error("Error listing blobs:", error);
 				return res.status(500).json({ error: "Failed to list gallery images" });
@@ -47,20 +47,27 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 
 			try {
 				const { filename, contentType, content } = req.body;
-				
+
 				if (!filename || !contentType || !content) {
-					return res.status(400).json({ error: "Missing filename, contentType, or content" });
+					return res
+						.status(400)
+						.json({ error: "Missing filename, contentType, or content" });
 				}
 
 				// Basic validation
-				const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+				const allowedTypes = [
+					"image/jpeg",
+					"image/png",
+					"image/webp",
+					"image/avif",
+				];
 				if (!allowedTypes.includes(contentType)) {
 					return res.status(400).json({ error: "Unsupported file type" });
 				}
 
 				// The content is a base64 encoded string from the frontend
 				const buffer = Buffer.from(content, "base64");
-				
+
 				// Generate a safe unique filename to avoid overwrites
 				const uniqueFilename = `gallery/${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
@@ -97,9 +104,9 @@ export function createGalleryHandler(dependencies = defaultDependencies) {
 					return res.status(400).json({ error: "Invalid url" });
 				}
 				if (!pathname.startsWith("/gallery/")) {
-					return res
-						.status(400)
-						.json({ error: "Refusing to delete a blob outside the gallery/ namespace" });
+					return res.status(400).json({
+						error: "Refusing to delete a blob outside the gallery/ namespace",
+					});
 				}
 
 				await dependencies.del(url);

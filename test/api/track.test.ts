@@ -87,8 +87,16 @@ test("track handler rejects unknown, missing, and prototype-chain event names", 
 
 		await handler(req, res);
 
-		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
-		assert.deepEqual(increments, [], `must not increment for ${JSON.stringify(body)}`);
+		assert.equal(
+			res.statusCode,
+			400,
+			`expected 400 for ${JSON.stringify(body)}`,
+		);
+		assert.deepEqual(
+			increments,
+			[],
+			`must not increment for ${JSON.stringify(body)}`,
+		);
 	}
 });
 

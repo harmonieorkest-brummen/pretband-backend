@@ -12,7 +12,11 @@ test("isSafeKeySegment accepts the ids/keys the admin UI generates", () => {
 		"a.b_c-1",
 		"évènement", // accented letters are fine
 	]) {
-		assert.equal(isSafeKeySegment(value), true, `expected "${value}" to be safe`);
+		assert.equal(
+			isSafeKeySegment(value),
+			true,
+			`expected "${value}" to be safe`,
+		);
 	}
 });
 
@@ -44,6 +48,14 @@ test("isSafeKeySegment rejects whitespace, backslash and control characters", ()
 	assert.equal(isSafeKeySegment("line\nbreak"), false, "newline");
 	assert.equal(isSafeKeySegment("back\\slash"), false, "backslash");
 	assert.equal(isSafeKeySegment(`a${String.fromCharCode(0)}b`), false, "NUL");
-	assert.equal(isSafeKeySegment(`a${String.fromCharCode(0x7f)}b`), false, "DEL");
-	assert.equal(isSafeKeySegment(`a${String.fromCharCode(0x1f)}b`), false, "unit sep");
+	assert.equal(
+		isSafeKeySegment(`a${String.fromCharCode(0x7f)}b`),
+		false,
+		"DEL",
+	);
+	assert.equal(
+		isSafeKeySegment(`a${String.fromCharCode(0x1f)}b`),
+		false,
+		"unit sep",
+	);
 });

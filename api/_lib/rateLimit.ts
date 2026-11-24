@@ -15,7 +15,10 @@ export function clientIp(req: VercelRequest): string {
 	return req.socket?.remoteAddress ?? "unknown";
 }
 
-type HitCounter = (identifier: string, windowSeconds: number) => Promise<number>;
+type HitCounter = (
+	identifier: string,
+	windowSeconds: number,
+) => Promise<number>;
 
 /**
  * Builds a per-IP login throttle from a fixed-window counter.

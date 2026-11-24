@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createMembersHandler } from "../../api/members.js";
 import type { MembersData } from "../../api/_lib/types.js";
+import { createMembersHandler } from "../../api/members.js";
 import { createRequest, createResponse } from "../helpers/http.js";
 
 const members: MembersData = {
@@ -136,7 +136,11 @@ test("members handler rejects section keys and names that are unsafe", async () 
 		const req = createRequest({ method: "PUT", body });
 		const res = createResponse();
 		await handler(req, res);
-		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+		assert.equal(
+			res.statusCode,
+			400,
+			`expected 400 for ${JSON.stringify(body)}`,
+		);
 	}
 });
 

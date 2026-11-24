@@ -63,55 +63,50 @@ test("getTraffic returns parsed metrics on a successful report", async () => {
 });
 
 test("getTraffic defaults missing metric values to zero", async () => {
-	await withEnvAsync(
-		{ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA },
-		async () => {
-			const { impl } = fakeFetch({ ok: true, json: async () => ({ rows: [] }) });
-			const getTraffic = createTrafficReader({
-				fetchImpl: impl,
-				getToken: async () => "t",
-			});
-			const result = await getTraffic();
-			assert.equal(result.connected, true);
-			if (result.connected) {
-				assert.equal(result.activeUsers, 0);
-				assert.equal(result.pageViews, 0);
-			}
-		},
-	);
+	await withEnvAsync({ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA }, async () => {
+		const { impl } = fakeFetch({ ok: true, json: async () => ({ rows: [] }) });
+		const getTraffic = createTrafficReader({
+			fetchImpl: impl,
+			getToken: async () => "t",
+		});
+		const result = await getTraffic();
+		assert.equal(result.connected, true);
+		if (result.connected) {
+			assert.equal(result.activeUsers, 0);
+			assert.equal(result.pageViews, 0);
+		}
+	});
 });
 
 test("getTraffic fails safe when the report request is not ok", async () => {
-	await withEnvAsync(
-		{ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA },
-		async () => {
-			const { impl } = fakeFetch({ ok: false, status: 403, json: async () => ({}) });
-			const getTraffic = createTrafficReader({
-				fetchImpl: impl,
-				getToken: async () => "t",
-			});
-			const result = await getTraffic();
-			assert.equal(result.connected, false);
-			if (!result.connected) assert.match(result.reason, /runReport failed: 403/);
-		},
-	);
+	await withEnvAsync({ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA }, async () => {
+		const { impl } = fakeFetch({
+			ok: false,
+			status: 403,
+			json: async () => ({}),
+		});
+		const getTraffic = createTrafficReader({
+			fetchImpl: impl,
+			getToken: async () => "t",
+		});
+		const result = await getTraffic();
+		assert.equal(result.connected, false);
+		if (!result.connected) assert.match(result.reason, /runReport failed: 403/);
+	});
 });
 
 test("getTraffic fails safe when token retrieval throws", async () => {
-	await withEnvAsync(
-		{ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA },
-		async () => {
-			const { impl } = fakeFetch({ ok: true, json: async () => ({}) });
-			const getTraffic = createTrafficReader({
-				fetchImpl: impl,
-				getToken: async () => {
-					throw new Error("bad key");
-				},
-			});
-			const result = await getTraffic();
-			assert.equal(result.connected, false);
-		},
-	);
+	await withEnvAsync({ GA4_PROPERTY_ID: "1", GA4_SA_KEY: SA }, async () => {
+		const { impl } = fakeFetch({ ok: true, json: async () => ({}) });
+		const getTraffic = createTrafficReader({
+			fetchImpl: impl,
+			getToken: async () => {
+				throw new Error("bad key");
+			},
+		});
+		const result = await getTraffic();
+		assert.equal(result.connected, false);
+	});
 });
 
 test("getTraffic fails safe when the service-account JSON is invalid", async () => {

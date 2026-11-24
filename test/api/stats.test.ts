@@ -1,16 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createStatsHandler } from "../../api/stats.js";
 import { STAT_KEYS } from "../../api/_lib/stats.js";
 import type { RedirectsData } from "../../api/_lib/types.js";
+import { createStatsHandler } from "../../api/stats.js";
 import { createRequest, createResponse } from "../helpers/http.js";
 
 const redirects: RedirectsData = {
 	redirects: [
 		{ slug: "flyer", url: "https://pretband.nl", label: "Flyer", scans: 12 },
 		{ slug: "poster", url: "https://youtu.be/x", label: "Poster", scans: 30 },
-		{ slug: "card", url: "https://pretband.nl/agenda", label: "Card", scans: 0 },
+		{
+			slug: "card",
+			url: "https://pretband.nl/agenda",
+			label: "Card",
+			scans: 0,
+		},
 	],
 };
 

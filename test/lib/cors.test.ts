@@ -11,7 +11,10 @@ test("handleCors reflects the production origin when allowed", () => {
 	const handled = handleCors(req, res);
 
 	assert.equal(handled, false);
-	assert.equal(res.headers["Access-Control-Allow-Origin"], "https://pretband.nl");
+	assert.equal(
+		res.headers["Access-Control-Allow-Origin"],
+		"https://pretband.nl",
+	);
 	assert.equal(
 		res.headers["Access-Control-Allow-Methods"],
 		"GET, POST, PUT, DELETE, OPTIONS",
@@ -79,7 +82,10 @@ test("handleCors still reflects the production origin in production", () => {
 
 		handleCors(req, res);
 
-		assert.equal(res.headers["Access-Control-Allow-Origin"], "https://pretband.nl");
+		assert.equal(
+			res.headers["Access-Control-Allow-Origin"],
+			"https://pretband.nl",
+		);
 	});
 });
 
