@@ -67,7 +67,8 @@ class FakeRedisClient {
 
 	async incr(key: string): Promise<number> {
 		this.calls.push(["incr", key]);
-		const next = (Number.parseInt(this.getResults.get(key) ?? "0", 10) || 0) + 1;
+		const next =
+			(Number.parseInt(this.getResults.get(key) ?? "0", 10) || 0) + 1;
 		this.getResults.set(key, String(next));
 		return next;
 	}
@@ -325,7 +326,12 @@ test("getRedirects maps hashes, includes scan counts, and sorts by slug", async 
 				label: "Flyer",
 				scans: 0,
 			},
-			{ slug: "poster", url: "https://youtu.be/abc", label: "Poster", scans: 42 },
+			{
+				slug: "poster",
+				url: "https://youtu.be/abc",
+				label: "Poster",
+				scans: 42,
+			},
 		],
 	});
 });
@@ -359,7 +365,11 @@ test("setRedirects replaces redirect keys but leaves scan counters untouched", a
 			"redirect:flyer",
 			{ url: "https://pretband.nl/#/#agenda", label: "Flyer" },
 		],
-		["hSet", "redirect:insta", { url: "https://instagram.com/pretband", label: "" }],
+		[
+			"hSet",
+			"redirect:insta",
+			{ url: "https://instagram.com/pretband", label: "" },
+		],
 	]);
 });
 

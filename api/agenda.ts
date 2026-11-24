@@ -37,13 +37,17 @@ export function createAgendaHandler(dependencies = defaultDependencies) {
 			const body = req.body as Partial<AgendaData>;
 
 			if (!body?.events || !Array.isArray(body.events)) {
-				return res
-					.status(400)
-					.json({ error: "Invalid agenda payload: expected { events: [...] }" });
+				return res.status(400).json({
+					error: "Invalid agenda payload: expected { events: [...] }",
+				});
 			}
 
 			for (const event of body.events) {
-				if (!event || typeof event !== "object" || !isSafeKeySegment(event.id)) {
+				if (
+					!event ||
+					typeof event !== "object" ||
+					!isSafeKeySegment(event.id)
+				) {
 					return res.status(400).json({
 						error:
 							"Invalid event id: 1-128 chars, without ':', whitespace or glob characters",

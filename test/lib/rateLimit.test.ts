@@ -7,7 +7,10 @@ import {
 	RATE_LIMIT_MAX_ATTEMPTS,
 } from "../../api/_lib/rateLimit.js";
 
-function reqWith(headers: Record<string, unknown>, socket?: unknown): VercelRequest {
+function reqWith(
+	headers: Record<string, unknown>,
+	socket?: unknown,
+): VercelRequest {
 	return { headers, socket } as unknown as VercelRequest;
 }
 
@@ -19,11 +22,17 @@ test("clientIp reads the first x-forwarded-for entry (string)", () => {
 });
 
 test("clientIp reads the first x-forwarded-for entry (array)", () => {
-	assert.equal(clientIp(reqWith({ "x-forwarded-for": ["198.51.100.9"] })), "198.51.100.9");
+	assert.equal(
+		clientIp(reqWith({ "x-forwarded-for": ["198.51.100.9"] })),
+		"198.51.100.9",
+	);
 });
 
 test("clientIp falls back to the socket address, then to 'unknown'", () => {
-	assert.equal(clientIp(reqWith({}, { remoteAddress: "10.0.0.1" })), "10.0.0.1");
+	assert.equal(
+		clientIp(reqWith({}, { remoteAddress: "10.0.0.1" })),
+		"10.0.0.1",
+	);
 	assert.equal(clientIp(reqWith({})), "unknown");
 });
 
@@ -39,7 +48,11 @@ test("createLoginRateLimiter allows up to the max, then rejects", async () => {
 		assert.equal(await check(req), true, `attempt ${i + 1} should be allowed`);
 	}
 	// The (max + 1)th hit returns max+1, which exceeds the limit.
-	assert.equal(await check(req), false, "over-limit attempt should be rejected");
+	assert.equal(
+		await check(req),
+		false,
+		"over-limit attempt should be rejected",
+	);
 });
 
 test("createLoginRateLimiter fails OPEN when the counter throws", async () => {

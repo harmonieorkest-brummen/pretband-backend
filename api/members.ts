@@ -43,7 +43,11 @@ export function createMembersHandler(dependencies = defaultDependencies) {
 			}
 
 			for (const section of body.sections) {
-				if (!section || typeof section !== "object" || !isSafeKeySegment(section.key)) {
+				if (
+					!section ||
+					typeof section !== "object" ||
+					!isSafeKeySegment(section.key)
+				) {
 					return res.status(400).json({
 						error:
 							"Invalid section key: 1-128 chars, without ':', whitespace or glob characters",

@@ -57,7 +57,10 @@ test("redirect handler falls back to home for an unknown slug", async () => {
 		},
 		fallbackUrl: () => FALLBACK,
 	});
-	const req = createRequest({ method: "GET", query: { slug: "does-not-exist" } });
+	const req = createRequest({
+		method: "GET",
+		query: { slug: "does-not-exist" },
+	});
 	const res = createResponse();
 
 	await handler(req, res);
@@ -104,7 +107,11 @@ test("redirect handler falls back when the stored destination is not http(s)", a
 
 	assert.equal(res.statusCode, 302);
 	assert.equal(res.headers.Location, FALLBACK);
-	assert.equal(scanned, false, "must not count a scan for an invalid destination");
+	assert.equal(
+		scanned,
+		false,
+		"must not count a scan for an invalid destination",
+	);
 });
 
 test("redirect handler still redirects when the scan counter fails", async () => {

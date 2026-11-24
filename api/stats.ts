@@ -36,15 +36,21 @@ export function createStatsHandler(dependencies = defaultDependencies) {
 		if (!auth) return; // requireAuth already sent 401
 
 		try {
-			const [{ redirects }, confetti, contactSubmits, failedLogins24h, lastLogin, traffic] =
-				await Promise.all([
-					dependencies.getRedirects(),
-					dependencies.readStat(STAT_KEYS.confetti),
-					dependencies.readStat(STAT_KEYS.contactSubmits),
-					dependencies.readStat(STAT_KEYS.failedLogins24h),
-					dependencies.readRawStat(STAT_KEYS.lastLogin),
-					dependencies.getTraffic(),
-				]);
+			const [
+				{ redirects },
+				confetti,
+				contactSubmits,
+				failedLogins24h,
+				lastLogin,
+				traffic,
+			] = await Promise.all([
+				dependencies.getRedirects(),
+				dependencies.readStat(STAT_KEYS.confetti),
+				dependencies.readStat(STAT_KEYS.contactSubmits),
+				dependencies.readStat(STAT_KEYS.failedLogins24h),
+				dependencies.readRawStat(STAT_KEYS.lastLogin),
+				dependencies.getTraffic(),
+			]);
 
 			const codes = redirects
 				.map((r) => ({

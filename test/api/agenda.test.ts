@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAgendaHandler } from "../../api/agenda.js";
 import type { AgendaData } from "../../api/_lib/types.js";
+import { createAgendaHandler } from "../../api/agenda.js";
 import { createRequest, createResponse } from "../helpers/http.js";
 
 const agenda: AgendaData = {
@@ -100,7 +100,12 @@ test("agenda handler rejects invalid PUT payloads after successful auth", async 
 		},
 	});
 
-	for (const body of [undefined, {}, { events: "not-array" }, { sections: [] }]) {
+	for (const body of [
+		undefined,
+		{},
+		{ events: "not-array" },
+		{ sections: [] },
+	]) {
 		const req = createRequest({ method: "PUT", body });
 		const res = createResponse();
 
@@ -134,7 +139,11 @@ test("agenda handler rejects event ids that are unsafe Redis key segments", asyn
 		const req = createRequest({ method: "PUT", body });
 		const res = createResponse();
 		await handler(req, res);
-		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+		assert.equal(
+			res.statusCode,
+			400,
+			`expected 400 for ${JSON.stringify(body)}`,
+		);
 	}
 });
 

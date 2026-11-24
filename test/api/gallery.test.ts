@@ -7,9 +7,15 @@ test("gallery handler stops on CORS preflight", async () => {
 	const handler = createGalleryHandler({
 		handleCors: () => true,
 		requireAuth: async () => null,
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
-		del: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
 	const req = createRequest({ method: "OPTIONS" });
 	const res = createResponse();
@@ -33,8 +39,12 @@ test("gallery GET returns list of sorted blob urls", async () => {
 				],
 			} as any;
 		},
-		put: async () => { throw new Error("Should not be called"); },
-		del: async () => { throw new Error("Should not be called"); },
+		put: async () => {
+			throw new Error("Should not be called");
+		},
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
 	const req = createRequest({ method: "GET" });
 	const res = createResponse();
@@ -54,9 +64,15 @@ test("gallery POST handles missing auth", async () => {
 			res.status(401).json({ error: "Unauthorized" });
 			return null;
 		},
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
-		del: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
 	const req = createRequest({ method: "POST" });
 	const res = createResponse();
@@ -70,11 +86,17 @@ test("gallery POST validates input payload", async () => {
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
-		del: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
-	
+
 	const req = createRequest({
 		method: "POST",
 		body: { filename: "test.jpg", contentType: "image/gif", content: "abc" },
@@ -92,17 +114,25 @@ test("gallery POST uploads valid file and returns URL", async () => {
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
-		list: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
 		put: async (filename, _buffer, _options) => {
 			putCalls++;
 			return { url: `https://blob/${filename}` } as any;
 		},
-		del: async () => { throw new Error("Should not be called"); },
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
-	
+
 	const req = createRequest({
 		method: "POST",
-		body: { filename: "test.png", contentType: "image/png", content: "dGVzdA==" },
+		body: {
+			filename: "test.png",
+			contentType: "image/png",
+			content: "dGVzdA==",
+		},
 	});
 	const res = createResponse();
 
@@ -110,7 +140,10 @@ test("gallery POST uploads valid file and returns URL", async () => {
 
 	assert.equal(res.statusCode, 200);
 	assert.equal(putCalls, 1);
-	assert.equal((res.jsonBody as any).url.startsWith("https://blob/gallery/"), true);
+	assert.equal(
+		(res.jsonBody as any).url.startsWith("https://blob/gallery/"),
+		true,
+	);
 });
 
 test("gallery DELETE deletes an existing blob in the gallery/ namespace", async () => {
@@ -119,8 +152,12 @@ test("gallery DELETE deletes an existing blob in the gallery/ namespace", async 
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
 		del: async (target) => {
 			assert.equal(target, url);
 			delCalls++;
@@ -142,8 +179,12 @@ test("gallery DELETE refuses a blob outside the gallery/ namespace", async () =>
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
 		del: async () => {
 			delCalls++;
 		},
@@ -151,7 +192,9 @@ test("gallery DELETE refuses a blob outside the gallery/ namespace", async () =>
 
 	const req = createRequest({
 		method: "DELETE",
-		body: { url: "https://abc.public.blob.vercel-storage.com/secrets/prod.env" },
+		body: {
+			url: "https://abc.public.blob.vercel-storage.com/secrets/prod.env",
+		},
 	});
 	const res = createResponse();
 
@@ -168,15 +211,25 @@ test("gallery DELETE rejects a missing or malformed url", async () => {
 	const handler = createGalleryHandler({
 		handleCors: () => false,
 		requireAuth: async () => ({ admin: true }),
-		list: async () => { throw new Error("Should not be called"); },
-		put: async () => { throw new Error("Should not be called"); },
-		del: async () => { throw new Error("Should not be called"); },
+		list: async () => {
+			throw new Error("Should not be called");
+		},
+		put: async () => {
+			throw new Error("Should not be called");
+		},
+		del: async () => {
+			throw new Error("Should not be called");
+		},
 	});
 
 	for (const body of [undefined, {}, { url: "" }, { url: "not-a-url" }]) {
 		const req = createRequest({ method: "DELETE", body });
 		const res = createResponse();
 		await handler(req, res);
-		assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(body)}`);
+		assert.equal(
+			res.statusCode,
+			400,
+			`expected 400 for ${JSON.stringify(body)}`,
+		);
 	}
 });
