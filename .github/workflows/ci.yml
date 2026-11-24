@@ -1,0 +1,8 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions: { contents: read }
+jobs:
+  ci:
+    uses: ImreBoersma/projects/.github/workflows/ci-node.yml@main
