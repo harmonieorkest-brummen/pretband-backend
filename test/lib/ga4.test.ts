@@ -55,7 +55,8 @@ test("getTraffic returns parsed metrics on a successful report", async () => {
 			// Called the runReport endpoint for the configured property, with the token.
 			assert.match(calls[0].url, /properties\/123456789:runReport$/);
 			assert.equal(
-				(calls[0].init?.headers as Record<string, string>).Authorization,
+				(calls[0].init?.headers as Record<string, string> | undefined)
+					?.Authorization,
 				"Bearer access-token",
 			);
 		},
