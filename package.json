@@ -6,10 +6,13 @@
 		"build": "tsc -p tsconfig.json",
 		"build:test": "tsc -p tsconfig.test.json",
 		"test": "npm run build:test && node --test --experimental-test-coverage --test-coverage-include='.test-dist/api/**' --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 .test-dist/test/api/*.test.js .test-dist/test/lib/*.test.js",
+		"lint": "biome ci",
+		"lint:fix": "biome check --write",
 		"dev": "vercel dev",
 		"deploy": "vercel --prod"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^2.6.9",
 		"@types/node": "^26.6.5",
 		"@vercel/node": "^12.0.1",
 		"typescript": "^6.0.2"
