@@ -28,7 +28,7 @@
 		"js-yaml": "^4.3.0",
 		"path-to-regexp": "^6.3.0",
 		"smol-toml": "^1.7.1",
-		"undici": "^6.28.0",
+		"undici": "^6.29.1",
 		"@vercel/python-analysis": {
 			"minimatch": "^10.2.6"
 		}
