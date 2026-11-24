@@ -1,6 +1,7 @@
 // Structural characters that must never appear in a Redis-key segment:
 // control chars, colon (our namespace separator), the glob metacharacters used
 // by KEYS (* ? [ ]), backslash, and any whitespace.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: the check rejects control characters on purpose.
 const UNSAFE_KEY_CHARS = /[\x00-\x1f\x7f:*?[\]\\\s]/;
 
 /**
