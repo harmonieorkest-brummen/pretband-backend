@@ -31,6 +31,9 @@
 		"undici": "^6.29.1",
 		"@vercel/python-analysis": {
 			"minimatch": "^11.0.0"
+		},
+		"@vercel/cli-config": {
+			"zod": "^4.6.6"
 		}
 	}
 }
